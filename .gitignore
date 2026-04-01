@@ -1,0 +1,5 @@
+# 敏感文件
+cookie.txt
+*.log
+__pycache__/
+*.pyc

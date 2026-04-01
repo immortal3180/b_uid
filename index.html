@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B站UID批量等级查询工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #fb7299 0%, #fc9dbb 100%);
+            color: white;
+            padding: 24px 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .input-section {
+            margin-bottom: 24px;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .input-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #e8e8e8;
+        }
+
+        .input-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            color: #999;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .input-tab.active {
+            color: #fb7299;
+            border-bottom-color: #fb7299;
+        }
+
+        .input-tab:hover:not(.active) {
+            color: #666;
+        }
+
+        .input-panel {
+            display: none;
+        }
+
+        .input-panel.active {
+            display: block;
+        }
+
+        .range-inputs {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .range-inputs input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .range-inputs input:focus {
+            outline: none;
+            border-color: #fb7299;
+        }
+
+        .range-inputs span {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .range-hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .range-hint.warning {
+            color: #ff9800;
+        }
+
+        .cookie-section {
+            margin-bottom: 24px;
+        }
+
+        .cookie-section label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .cookie-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-small:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+        }
+
+        .btn-small.btn-save {
+            background: #00a1d6;
+            color: white;
+            border-color: #00a1d6;
+        }
+
+        .btn-small.btn-save:hover {
+            background: #008ebf;
+        }
+
+        .cookie-section textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: Consolas, monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .cookie-section textarea:focus {
+            outline: none;
+            border-color: #fb7299;
+        }
+
+        .input-section textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .input-section textarea:focus {
+            outline: none;
+            border-color: #fb7299;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .filter-section h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .level-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .level-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .level-checkbox input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .level-checkbox.selected {
+            font-weight: 600;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #fb7299 0%, #fc9dbb 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(251, 114, 153, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #e8e8e8;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar.active {
+            display: block;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fb7299, #fc9dbb);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fb7299;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .results-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .results-table tr:hover {
+            background: #fafafa;
+        }
+
+        .level-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .level-0 { background: #e0e0e0; color: #666; }
+        .level-1 { background: #c8e6c9; color: #2e7d32; }
+        .level-2 { background: #bbdefb; color: #1565c0; }
+        .level-3 { background: #ce93d8; color: #7b1fa2; }
+        .level-4 { background: #ffb74d; color: #e65100; }
+        .level-5 { background: linear-gradient(135deg, #ffd700, #ff8c00); color: white; }
+        .level-6 { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; }
+
+        .result-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .export-section {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding-top: 20px;
+            border-top: 1px solid #e8e8e8;
+        }
+
+        .export-info {
+            flex: 1;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .error-msg {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-msg.active {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .stats {
+                flex-direction: column;
+            }
+
+            .results-table {
+                font-size: 13px;
+            }
+
+            .results-table th,
+            .results-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📺 B站UID批量等级查询工具</h1>
+            <p>批量查询B站用户等级，支持按等级筛选导出</p>
+        </div>
+
+        <div class="content">
+            <div class="input-section">
+                <div class="input-tabs">
+                    <button class="input-tab active" onclick="switchInputMode('list')">📝 列表输入</button>
+                    <button class="input-tab" onclick="switchInputMode('range')">🔢 范围查询</button>
+                </div>
+
+                <div class="input-panel active" id="listPanel">
+                    <textarea id="uidInput" placeholder="例如：
+12345678
+23456789
+34567890
+
+或者：12345678, 23456789, 34567890"></textarea>
+                    <p class="input-hint">支持批量输入，UID之间用换行、逗号或空格分隔</p>
+                </div>
+
+                <div class="input-panel" id="rangePanel">
+                    <div class="range-inputs">
+                        <input type="number" id="startUid" placeholder="起始UID" min="1">
+                        <span>—</span>
+                        <input type="number" id="endUid" placeholder="结束UID" min="1">
+                    </div>
+                    <p class="input-hint range-hint" id="rangeHint">请输入起始和结束UID</p>
+                </div>
+            </div>
+
+            <div class="cookie-section">
+                <label for="cookieInput">
+                    B站 Cookie设置
+                    <span class="cookie-buttons">
+                        <button type="button" class="btn-small" onclick="showCookieHelp()">获取帮助</button>
+                        <button type="button" class="btn-small btn-save" onclick="saveCookie()">保存Cookie</button>
+                    </span>
+                </label>
+                <textarea id="cookieInput" placeholder="在此粘贴Cookie（从B站Console中复制 document.cookie 的结果）"></textarea>
+                <p class="input-hint">Cookie会保存到服务器，下次打开自动加载</p>
+            </div>
+
+            <div class="filter-section">
+                <h3>筛选等级</h3>
+                <div class="level-checkboxes">
+                    <label class="level-checkbox selected" data-level="0">
+                        <input type="checkbox" value="0" checked> 0级
+                    </label>
+                    <label class="level-checkbox selected" data-level="1">
+                        <input type="checkbox" value="1" checked> 1级
+                    </label>
+                    <label class="level-checkbox selected" data-level="2">
+                        <input type="checkbox" value="2" checked> 2级
+                    </label>
+                    <label class="level-checkbox selected" data-level="3">
+                        <input type="checkbox" value="3" checked> 3级
+                    </label>
+                    <label class="level-checkbox selected" data-level="4">
+                        <input type="checkbox" value="4" checked> 4级
+                    </label>
+                    <label class="level-checkbox selected" data-level="5">
+                        <input type="checkbox" value="5" checked> 5级
+                    </label>
+                    <label class="level-checkbox selected" data-level="6">
+                        <input type="checkbox" value="6" checked> 6级
+                    </label>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="queryBtn" onclick="queryUids()">
+                    🔍 开始查询
+                </button>
+                <button class="btn btn-secondary" onclick="clearAll()">
+                    🗑️ 清空
+                </button>
+            </div>
+
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="error-msg" id="errorMsg"></div>
+
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">总UID数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successCount">0</div>
+                    <div class="stat-label">成功</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="failCount">0</div>
+                    <div class="stat-label">失败</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="selectedCount">0</div>
+                    <div class="stat-label">已选</div>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="results-table" id="resultsTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                            <th>UID</th>
+                            <th>昵称</th>
+                            <th>等级</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+
+            <div class="export-section" id="exportSection" style="display: none;">
+                <div class="export-info">
+                    已选择 <span id="exportCount">0</span> 个UID
+                </div>
+                <button class="btn btn-primary" onclick="exportSelected()">
+                    📥 导出选中UID
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/bilibili';
+        let queryResults = [];
+        let selectedLevels = [0, 1, 2, 3, 4, 5, 6];
+        let currentInputMode = 'list';
+
+        async function loadCookie() {
+            try {
+                const response = await fetch('/api/cookie/get');
+                const data = await response.json();
+                if (data.code === 0 && data.cookie) {
+                    document.getElementById('cookieInput').value = data.cookie;
+                }
+            } catch (e) {
+                console.log('加载Cookie失败', e);
+            }
+        }
+
+        async function saveCookie() {
+            const cookie = document.getElementById('cookieInput').value;
+            try {
+                const response = await fetch('/api/cookie/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cookie: cookie })
+                });
+                const data = await response.json();
+                if (data.code === 0) {
+                    alert('Cookie保存成功！');
+                } else {
+                    alert('保存失败：' + (data.message || '未知错误'));
+                }
+            } catch (e) {
+                alert('保存失败：' + e.message);
+            }
+        }
+
+        function showCookieHelp() {
+            alert('获取Cookie步骤：\n\n1. 打开 https://www.bilibili.com/ 并登录\n2. 登录后按 F12 打开开发者工具\n3. 切换到 Console（控制台）标签\n4. 输入：document.cookie 然后回车\n5. 复制输出的内容\n6. 粘贴到上面的文本框\n7. 点击"保存Cookie"');
+        }
+
+        function switchInputMode(mode) {
+            currentInputMode = mode;
+            document.querySelectorAll('.input-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.input-panel').forEach(panel => panel.classList.remove('active'));
+
+            if (mode === 'list') {
+                document.querySelector('.input-tab[onclick*="list"]').classList.add('active');
+                document.getElementById('listPanel').classList.add('active');
+            } else {
+                document.querySelector('.input-tab[onclick*="range"]').classList.add('active');
+                document.getElementById('rangePanel').classList.add('active');
+            }
+        }
+
+        function generateUidRange(start, end) {
+            const uids = [];
+            for (let i = start; i <= end; i++) {
+                uids.push(String(i));
+            }
+            return uids;
+        }
+
+        function updateRangeHint() {
+            const startUid = document.getElementById('startUid').value;
+            const endUid = document.getElementById('endUid').value;
+            const hint = document.getElementById('rangeHint');
+
+            if (!startUid || !endUid) {
+                hint.textContent = '请输入起始和结束UID';
+                hint.classList.remove('warning');
+                return;
+            }
+
+            const start = parseInt(startUid);
+            const end = parseInt(endUid);
+
+            if (start > end) {
+                hint.textContent = '起始UID不能大于结束UID';
+                hint.classList.add('warning');
+                return;
+            }
+
+            const count = end - start + 1;
+            if (count > 10000) {
+                hint.textContent = `范围过大：${count.toLocaleString()} 个UID，可能会导致查询缓慢或被限制`;
+                hint.classList.add('warning');
+            } else if (count > 1000) {
+                hint.textContent = `共 ${count.toLocaleString()} 个UID，建议耐心等待`;
+                hint.classList.add('warning');
+            } else {
+                hint.textContent = `共 ${count.toLocaleString()} 个UID`;
+                hint.classList.remove('warning');
+            }
+        }
+
+        document.getElementById('startUid').addEventListener('input', updateRangeHint);
+        document.getElementById('endUid').addEventListener('input', updateRangeHint);
+
+        document.querySelectorAll('.level-checkbox input').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.parentElement;
+                if (this.checked) {
+                    label.classList.add('selected');
+                    if (!selectedLevels.includes(parseInt(this.value))) {
+                        selectedLevels.push(parseInt(this.value));
+                    }
+                } else {
+                    label.classList.remove('selected');
+                    selectedLevels = selectedLevels.filter(l => l !== parseInt(this.value));
+                }
+                updateResultsVisibility();
+                updateStats();
+            });
+        });
+
+        function parseUids(input) {
+            return input
+                .split(/[\n,\s]+/)
+                .map(uid => uid.trim())
+                .filter(uid => uid && /^\d+$/.test(uid));
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMsg');
+            errorEl.textContent = message;
+            errorEl.classList.add('active');
+            setTimeout(() => errorEl.classList.remove('active'), 5000);
+        }
+
+        function showProgress(current, total) {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            progressBar.classList.add('active');
+            progressFill.style.width = `${(current / total) * 100}%`;
+        }
+
+        function hideProgress() {
+            document.getElementById('progressBar').classList.remove('active');
+        }
+
+        async function queryUid(uid) {
+            try {
+                let url = `${API_BASE}?uid=${uid}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Referer': 'https://www.bilibili.com/',
+                        'Accept': 'application/json, text/plain, */*'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.code === 0 && data.data && data.data.length > 0) {
+                    const userInfo = data.data[0];
+                    return {
+                        uid: uid,
+                        nickname: userInfo.name || '未知',
+                        level: userInfo.level || 0,
+                        success: true
+                    };
+                } else if (data.code === -799) {
+                    return {
+                        uid: uid,
+                        nickname: '请求频繁',
+                        level: 0,
+                        success: false,
+                        error: '请求过于频繁，请稍后再试'
+                    };
+                } else {
+                    return {
+                        uid: uid,
+                        nickname: '未知',
+                        level: 0,
+                        success: false,
+                        error: data.msg || data.message || '用户不存在'
+                    };
+                }
+            } catch (error) {
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    return {
+                        uid: uid,
+                        nickname: '跨域错误',
+                        level: 0,
+                        success: false,
+                        error: 'CORS错误：请安装CORS扩展或使用浏览器插件'
+                    };
+                }
+                return {
+                    uid: uid,
+                    nickname: '未知',
+                    level: 0,
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        async function queryUids() {
+            let uids = [];
+
+            if (currentInputMode === 'range') {
+                const startUid = document.getElementById('startUid').value;
+                const endUid = document.getElementById('endUid').value;
+
+                if (!startUid || !endUid) {
+                    showError('请输入起始和结束UID');
+                    return;
+                }
+
+                const start = parseInt(startUid);
+                const end = parseInt(endUid);
+
+                if (start > end) {
+                    showError('起始UID不能大于结束UID');
+                    return;
+                }
+
+                const count = end - start + 1;
+                if (count > 50000) {
+                    showError('范围过大，最多支持50000个UID');
+                    return;
+                }
+
+                uids = generateUidRange(start, end);
+            } else {
+                const input = document.getElementById('uidInput').value;
+                uids = parseUids(input);
+            }
+
+            if (uids.length === 0) {
+                showError('请输入有效的UID');
+                return;
+            }
+
+            const queryBtn = document.getElementById('queryBtn');
+            queryBtn.disabled = true;
+            queryBtn.textContent = '🔄 查询中...';
+
+            queryResults = [];
+            document.getElementById('resultsBody').innerHTML = '';
+            document.getElementById('resultsTable').style.display = 'none';
+            document.getElementById('exportSection').style.display = 'none';
+            document.getElementById('stats').style.display = 'none';
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let i = 0; i < uids.length; i++) {
+                showProgress(i + 1, uids.length);
+
+                const result = await queryUid(uids[i]);
+                queryResults.push(result);
+
+                if (result.success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+
+                renderResult(result);
+                updateStats();
+            }
+
+            hideProgress();
+            queryBtn.disabled = false;
+            queryBtn.textContent = '🔍 开始查询';
+
+            document.getElementById('resultsTable').style.display = 'table';
+            document.getElementById('exportSection').style.display = 'flex';
+            document.getElementById('stats').style.display = 'flex';
+
+            if (successCount === 0 && failCount > 0) {
+                showError('所有UID查询失败，请检查网络或UID是否正确');
+            }
+        }
+
+        function renderResult(result) {
+            const tbody = document.getElementById('resultsBody');
+            const tr = document.createElement('tr');
+            tr.dataset.uid = result.uid;
+            tr.dataset.level = result.level;
+
+            const isSelected = selectedLevels.includes(result.level);
+            tr.style.display = isSelected ? '' : 'none';
+
+            const checkedAttr = isSelected ? 'checked' : '';
+            const levelClass = `level-${result.level}`;
+            const nickname = result.success ? escapeHtml(result.nickname) : (result.error || '查询失败');
+
+            tr.innerHTML = `
+                <td><input type="checkbox" class="result-checkbox" ${checkedAttr} onchange="updateStats()"></td>
+                <td>${result.uid}</td>
+                <td>${nickname}</td>
+                <td><span class="level-badge ${levelClass}">Lv.${result.level}</span></td>
+            `;
+
+            tbody.appendChild(tr);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateResultsVisibility() {
+            const rows = document.querySelectorAll('#resultsBody tr');
+            rows.forEach(row => {
+                const level = parseInt(row.dataset.level);
+                const checkbox = row.querySelector('.result-checkbox');
+                if (selectedLevels.includes(level)) {
+                    row.style.display = '';
+                    checkbox.checked = true;
+                } else {
+                    row.style.display = 'none';
+                    checkbox.checked = false;
+                }
+            });
+        }
+
+        function updateStats() {
+            const totalCount = queryResults.length;
+            const successCount = queryResults.filter(r => r.success).length;
+            const failCount = queryResults.filter(r => !r.success).length;
+
+            const selectedCheckboxes = document.querySelectorAll('#resultsBody .result-checkbox:checked');
+            const selectedCount = selectedCheckboxes.length;
+
+            document.getElementById('totalCount').textContent = totalCount;
+            document.getElementById('successCount').textContent = successCount;
+            document.getElementById('failCount').textContent = failCount;
+            document.getElementById('selectedCount').textContent = selectedCount;
+            document.getElementById('exportCount').textContent = selectedCount;
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const visibleCheckboxes = document.querySelectorAll('#resultsBody tr:not([style*="display: none"]) .result-checkbox');
+
+            visibleCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+
+            updateStats();
+        }
+
+        function exportSelected() {
+            const selectedCheckboxes = document.querySelectorAll('#resultsBody .result-checkbox:checked');
+            const selectedUids = Array.from(selectedCheckboxes).map(cb => {
+                return cb.closest('tr').dataset.uid;
+            });
+
+            if (selectedUids.length === 0) {
+                showError('请先选择要导出的UID');
+                return;
+            }
+
+            const content = selectedUids.join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bilibili_uids_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAll() {
+            document.getElementById('uidInput').value = '';
+            document.getElementById('startUid').value = '';
+            document.getElementById('endUid').value = '';
+            document.getElementById('resultsBody').innerHTML = '';
+            document.getElementById('resultsTable').style.display = 'none';
+            document.getElementById('exportSection').style.display = 'none';
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('selectAll').checked = false;
+            queryResults = [];
+            updateRangeHint();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCookie();
+        });
+    </script>
+</body>
+</html>
