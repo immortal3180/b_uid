@@ -5,6 +5,7 @@ import urllib.parse
 import os
 
 PORT = 8888
+BATCH_SIZE = 100  # 每次最多查询100个UID
 
 COOKIE_FILE = 'cookie.txt'
 
@@ -54,7 +55,7 @@ class BilibiliHandler(SimpleHTTPRequestHandler):
             req = urllib.request.Request(url, headers=make_headers(cookie))
 
             try:
-                with urllib.request.urlopen(req, timeout=10) as response:
+                with urllib.request.urlopen(req, timeout=15) as response:
                     data = json.loads(response.read().decode())
                     self.wfile.write(json.dumps(data).encode())
             except Exception as e:
@@ -99,6 +100,9 @@ class BilibiliHandler(SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
         self.end_headers()
+
+    def log_message(self, format, *args):
+        pass
 
 print(f'=' * 60)
 print(f'启动服务成功！')

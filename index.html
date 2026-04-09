@@ -765,6 +765,108 @@
             }
         }
 
+        async function queryUidsBatch(uids) {
+            const batchSize = 50;
+            const results = new Map();
+            let processed = 0;
+
+            for (let i = 0; i < uids.length; i += batchSize) {
+                const batch = uids.slice(i, i + batchSize);
+                const uidString = batch.join(',');
+
+                try {
+                    let url = `${API_BASE}?uid=${uidString}`;
+                    const response = await fetch(url, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Referer': 'https://www.bilibili.com/',
+                            'Accept': 'application/json, text/plain, */*'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.code === 0) {
+                        const userMap = new Map();
+                        if (data.data && data.data.length > 0) {
+                            data.data.forEach(user => {
+                                userMap.set(String(user.mid), user);
+                            });
+                        }
+
+                        batch.forEach(uid => {
+                            const userInfo = userMap.get(String(uid));
+                            if (userInfo) {
+                                results.set(uid, {
+                                    uid: uid,
+                                    nickname: userInfo.name || '未知',
+                                    level: userInfo.level || 0,
+                                    success: true
+                                });
+                            } else {
+                                results.set(uid, {
+                                    uid: uid,
+                                    nickname: '未知',
+                                    level: 0,
+                                    success: false,
+                                    error: '用户不存在'
+                                });
+                            }
+                        });
+                    } else if (data.code === -799) {
+                        batch.forEach(uid => {
+                            results.set(uid, {
+                                uid: uid,
+                                nickname: '请求频繁',
+                                level: 0,
+                                success: false,
+                                error: '请求过于频繁，请稍后再试'
+                            });
+                        });
+                    } else {
+                        batch.forEach(uid => {
+                            results.set(uid, {
+                                uid: uid,
+                                nickname: '未知',
+                                level: 0,
+                                success: false,
+                                error: data.msg || data.message || '查询失败'
+                            });
+                        });
+                    }
+                } catch (error) {
+                    batch.forEach(uid => {
+                        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                            results.set(uid, {
+                                uid: uid,
+                                nickname: '网络错误',
+                                level: 0,
+                                success: false,
+                                error: '网络连接错误'
+                            });
+                        } else {
+                            results.set(uid, {
+                                uid: uid,
+                                nickname: '未知',
+                                level: 0,
+                                success: false,
+                                error: error.message
+                            });
+                        }
+                    });
+                }
+
+                processed += batch.length;
+                showProgress(processed, uids.length);
+            }
+
+            return uids.map(uid => results.get(uid));
+        }
+
         async function queryUids() {
             let uids = [];
 
@@ -815,22 +917,33 @@
             let successCount = 0;
             let failCount = 0;
 
-            for (let i = 0; i < uids.length; i++) {
-                showProgress(i + 1, uids.length);
-
-                const result = await queryUid(uids[i]);
-                queryResults.push(result);
-
-                if (result.success) {
-                    successCount++;
-                } else {
-                    failCount++;
+            try {
+                queryResults = await queryUidsBatch(uids);
+            } catch (e) {
+                console.log('批量查询失败，回退到单个查询');
+                for (let i = 0; i < uids.length; i++) {
+                    showProgress(i + 1, uids.length);
+                    const result = await queryUid(uids[i]);
+                    queryResults.push(result);
+                    if (result.success) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                    renderResult(result);
+                    updateStats();
                 }
-
-                renderResult(result);
-                updateStats();
+                showProgress(uids.length, uids.length);
             }
 
+            successCount = queryResults.filter(r => r.success).length;
+            failCount = queryResults.filter(r => !r.success).length;
+
+            queryResults.forEach(result => {
+                renderResult(result);
+            });
+
+            updateStats();
             hideProgress();
             queryBtn.disabled = false;
             queryBtn.textContent = '🔍 开始查询';
